@@ -1,0 +1,21 @@
+{
+  "name": "yacht-summary-backend",
+  "version": "1.0.0",
+  "description": "Backend server for YachtSummary PWA with push notifications",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["yacht", "summary", "push-notifications", "pwa"],
+  "author": "YachtSummary",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "web-push": "^3.6.7",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  }
+}
