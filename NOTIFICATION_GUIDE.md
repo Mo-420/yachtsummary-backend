@@ -71,6 +71,29 @@ Content-Type: application/json
 }
 ```
 
+### **Universal Notification Endpoint (NEW!)**
+```http
+POST /notify
+Content-Type: application/json
+
+{
+  "userId": "user123",           // Optional for broadcast
+  "title": "New Yacht Available!",
+  "body": "Check out this amazing yacht!",
+  "icon": "🚢",                   // Default: 🚢
+  "badge": "🚢",                 // Default: 🚢
+  "tag": "yacht-notification",   // Default: notification
+  "url": "https://yachtsummary.com", // Default: https://yachtsummary.com
+  "type": "yacht_alert",         // Default: general
+  "priority": "high",            // low, normal, medium, high, urgent
+  "data": {                      // Additional custom data
+    "yachtId": "123",
+    "price": "$500,000"
+  },
+  "broadcast": false             // Send to all users
+}
+```
+
 ### **Send Notification to Specific User**
 ```http
 POST /send-notification
@@ -153,6 +176,37 @@ GET /stats
 
 #### **JavaScript Example:**
 ```javascript
+// Universal notification function (RECOMMENDED)
+async function sendUniversalNotification(options) {
+  try {
+    const response = await fetch('https://yachtsummary-backend.onrender.com/notify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: options.userId,           // Optional for broadcast
+        title: options.title,
+        body: options.body,
+        icon: options.icon || '🚢',
+        badge: options.badge || '🚢',
+        tag: options.tag || 'notification',
+        url: options.url || 'https://yachtsummary.com',
+        type: options.type || 'general',
+        priority: options.priority || 'normal',
+        data: options.data || {},
+        broadcast: options.broadcast || false
+      })
+    });
+    
+    const result = await response.json();
+    console.log('Notification sent:', result);
+    return result;
+  } catch (error) {
+    console.error('Error sending notification:', error);
+  }
+}
+
 // Send notification to specific user
 async function sendNotification(userId, title, body) {
   try {
@@ -228,6 +282,29 @@ async function sendLeadNotification(userId, clientName, yachtName, priority = 'm
 
 #### **cURL Examples:**
 ```bash
+# Universal notification (RECOMMENDED)
+curl -X POST https://yachtsummary-backend.onrender.com/notify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user123",
+    "title": "New Yacht Available!",
+    "body": "Check out this amazing yacht!",
+    "icon": "🚢",
+    "priority": "high",
+    "type": "yacht_alert",
+    "data": {"yachtId": "123", "price": "$500,000"}
+  }'
+
+# Universal broadcast to all users
+curl -X POST https://yachtsummary-backend.onrender.com/notify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Yacht Show Update",
+    "body": "New yachts added to our collection!",
+    "broadcast": true,
+    "priority": "medium"
+  }'
+
 # Send notification to specific user
 curl -X POST https://yachtsummary-backend.onrender.com/send-notification \
   -H "Content-Type: application/json" \
