@@ -200,6 +200,121 @@ app.post('/test-notification', async (req, res) => {
   }
 });
 
+// Universal notification endpoint - handles any notification type
+app.post('/notify', async (req, res) => {
+  const { 
+    userId,           // Target user ID (optional for broadcast)
+    title,            // Notification title
+    body,             // Notification message
+    icon = '🚢',      // Icon (default: 🚢)
+    badge = '🚢',    // Badge (default: 🚢)
+    tag = 'notification', // Tag for grouping
+    url = 'https://yachtsummary.com', // Click URL
+    type = 'general', // Notification type
+    priority = 'normal', // Priority level
+    data = {},       // Additional data
+    broadcast = false // Send to all users
+  } = req.body;
+
+  // Validation
+  if (!title || !body) {
+    return res.status(400).json({ error: 'title and body are required' });
+  }
+
+  if (!broadcast && !userId) {
+    return res.status(400).json({ error: 'userId is required for individual notifications, or set broadcast: true' });
+  }
+
+  // Priority emoji mapping
+  const priorityEmojis = {
+    'low': '🟢',
+    'normal': '🔵', 
+    'medium': '🟡',
+    'high': '🔴',
+    'urgent': '🚨'
+  };
+
+  const priorityEmoji = priorityEmojis[priority] || '🔵';
+
+  // Build notification payload
+  const payload = JSON.stringify({
+    title: `${priorityEmoji} ${title}`,
+    body: body,
+    icon: icon,
+    badge: badge,
+    tag: tag,
+    data: {
+      url: url,
+      type: type,
+      priority: priority,
+      timestamp: new Date().toISOString(),
+      ...data
+    }
+  });
+
+  let successCount = 0;
+  let failureCount = 0;
+  const results = [];
+
+  if (broadcast) {
+    // Send to all users
+    for (const [targetUserId, subscription] of subscriptions.entries()) {
+      try {
+        await webpush.sendNotification(subscription, payload);
+        successCount++;
+        results.push({ userId: targetUserId, status: 'success' });
+        console.log(`✓ Broadcast notification sent to ${targetUserId}`);
+      } catch (error) {
+        failureCount++;
+        results.push({ userId: targetUserId, status: 'failed', error: error.message });
+        console.error(`✗ Failed to send to ${targetUserId}: ${error.message}`);
+        
+        // Remove invalid subscription
+        if (error.statusCode === 410) {
+          subscriptions.delete(targetUserId);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Broadcast sent to ${successCount} users, ${failureCount} failed`,
+      type: 'broadcast',
+      successCount,
+      failureCount,
+      results
+    });
+
+  } else {
+    // Send to specific user
+    const subscription = subscriptions.get(userId);
+
+    if (!subscription) {
+      return res.status(404).json({ error: `No subscription found for user: ${userId}` });
+    }
+
+    try {
+      await webpush.sendNotification(subscription, payload);
+      console.log(`✓ Notification sent to ${userId}`);
+      res.json({ 
+        success: true, 
+        message: 'Notification sent successfully',
+        type: 'individual',
+        userId: userId
+      });
+    } catch (error) {
+      console.error(`✗ Failed to send notification: ${error.message}`);
+      
+      // Remove invalid subscription
+      if (error.statusCode === 410) {
+        subscriptions.delete(userId);
+      }
+      
+      res.status(500).json({ error: 'Failed to send notification', details: error.message });
+    }
+  }
+});
+
 // New lead notification (main use case)
 app.post('/notify-new-lead', async (req, res) => {
   const { userId, clientName, yachtName, priority } = req.body;
@@ -259,6 +374,7 @@ app.listen(PORT, () => {
   console.log(`   GET  /vapid-public-key          - Get VAPID public key`);
   console.log(`   POST /subscribe                 - Subscribe to notifications`);
   console.log(`   POST /unsubscribe               - Unsubscribe from notifications`);
+  console.log(`   POST /notify                    - Universal notification endpoint (NEW!)`);
   console.log(`   POST /send-notification         - Send notification to specific user`);
   console.log(`   POST /broadcast-notification    - Send notification to all users`);
   console.log(`   POST /notify-new-lead           - Send new lead notification`);

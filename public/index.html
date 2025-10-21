@@ -188,14 +188,87 @@
         
         <div class="content">
             <div class="tabs">
-                <div class="tab active" onclick="showTab('send')">Send Notification</div>
+                <div class="tab active" onclick="showTab('universal')">Universal Notify</div>
+                <div class="tab" onclick="showTab('send')">Send Notification</div>
                 <div class="tab" onclick="showTab('broadcast')">Broadcast</div>
                 <div class="tab" onclick="showTab('lead')">New Lead</div>
                 <div class="tab" onclick="showTab('stats')">Statistics</div>
             </div>
             
+            <!-- Universal Notification Tab -->
+            <div id="universal" class="tab-content active">
+                <h2>Universal Notification</h2>
+                <p style="color: #666; margin-bottom: 20px;">Send any type of notification with full customization</p>
+                <form id="universalForm">
+                    <div class="form-group">
+                        <label for="universalUserId">User ID (optional for broadcast):</label>
+                        <input type="text" id="universalUserId" name="userId" placeholder="Enter user ID or leave empty for broadcast">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalTitle">Title:</label>
+                        <input type="text" id="universalTitle" name="title" placeholder="Notification title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalBody">Message:</label>
+                        <textarea id="universalBody" name="body" placeholder="Notification message" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalIcon">Icon:</label>
+                        <input type="text" id="universalIcon" name="icon" placeholder="🚢" value="🚢">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalBadge">Badge:</label>
+                        <input type="text" id="universalBadge" name="badge" placeholder="🚢" value="🚢">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalTag">Tag:</label>
+                        <input type="text" id="universalTag" name="tag" placeholder="notification" value="notification">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalUrl">Click URL:</label>
+                        <input type="url" id="universalUrl" name="url" placeholder="https://yachtsummary.com" value="https://yachtsummary.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalType">Type:</label>
+                        <input type="text" id="universalType" name="type" placeholder="general" value="general">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalPriority">Priority:</label>
+                        <select id="universalPriority" name="priority">
+                            <option value="low">Low (🟢)</option>
+                            <option value="normal" selected>Normal (🔵)</option>
+                            <option value="medium">Medium (🟡)</option>
+                            <option value="high">High (🔴)</option>
+                            <option value="urgent">Urgent (🚨)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="universalData">Additional Data (JSON):</label>
+                        <textarea id="universalData" name="data" placeholder='{"customField": "value"}'></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="universalBroadcast" name="broadcast"> 
+                            Broadcast to all users (ignores User ID)
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn">Send Universal Notification</button>
+                </form>
+            </div>
+            
             <!-- Send Notification Tab -->
-            <div id="send" class="tab-content active">
+            <div id="send" class="tab-content">
                 <h2>Send Notification to User</h2>
                 <form id="sendForm">
                     <div class="form-group">
@@ -318,6 +391,53 @@
                 response.style.display = 'none';
             }, 5000);
         }
+        
+        // Universal notification form
+        document.getElementById('universalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            // Parse additional data if provided
+            if (data.data) {
+                try {
+                    data.data = JSON.parse(data.data);
+                } catch (error) {
+                    showResponse('❌ Invalid JSON in Additional Data field', true);
+                    return;
+                }
+            } else {
+                data.data = {};
+            }
+            
+            // Convert broadcast checkbox to boolean
+            data.broadcast = document.getElementById('universalBroadcast').checked;
+            
+            try {
+                const response = await fetch(`${API_BASE}/notify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    if (result.type === 'broadcast') {
+                        showResponse(`✅ ${result.message} (${result.successCount} sent, ${result.failureCount} failed)`);
+                    } else {
+                        showResponse(`✅ ${result.message}`);
+                    }
+                } else {
+                    showResponse(`❌ ${result.error}`, true);
+                }
+            } catch (error) {
+                showResponse(`❌ Error: ${error.message}`, true);
+            }
+        });
         
         // Send notification form
         document.getElementById('sendForm').addEventListener('submit', async (e) => {
