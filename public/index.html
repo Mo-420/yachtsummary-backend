@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YachtSummary - Notification Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .response.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .response.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .stats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .stats h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚢 YachtSummary</h1>
+            <p>Notification Dashboard</p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('send')">Send Notification</div>
+                <div class="tab" onclick="showTab('broadcast')">Broadcast</div>
+                <div class="tab" onclick="showTab('lead')">New Lead</div>
+                <div class="tab" onclick="showTab('stats')">Statistics</div>
+            </div>
+            
+            <!-- Send Notification Tab -->
+            <div id="send" class="tab-content active">
+                <h2>Send Notification to User</h2>
+                <form id="sendForm">
+                    <div class="form-group">
+                        <label for="userId">User ID:</label>
+                        <input type="text" id="userId" name="userId" placeholder="Enter user ID" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" id="title" name="title" placeholder="Notification title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="body">Message:</label>
+                        <textarea id="body" name="body" placeholder="Notification message" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="icon">Icon (optional):</label>
+                        <input type="text" id="icon" name="icon" placeholder="🚢" value="🚢">
+                    </div>
+                    
+                    <button type="submit" class="btn">Send Notification</button>
+                    <button type="button" class="btn btn-secondary" onclick="testNotification()">Test Notification</button>
+                </form>
+            </div>
+            
+            <!-- Broadcast Tab -->
+            <div id="broadcast" class="tab-content">
+                <h2>Broadcast to All Users</h2>
+                <form id="broadcastForm">
+                    <div class="form-group">
+                        <label for="broadcastTitle">Title:</label>
+                        <input type="text" id="broadcastTitle" name="title" placeholder="Broadcast title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="broadcastBody">Message:</label>
+                        <textarea id="broadcastBody" name="body" placeholder="Broadcast message" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="broadcastIcon">Icon (optional):</label>
+                        <input type="text" id="broadcastIcon" name="icon" placeholder="🚢" value="🚢">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning">Broadcast to All</button>
+                </form>
+            </div>
+            
+            <!-- New Lead Tab -->
+            <div id="lead" class="tab-content">
+                <h2>New Lead Notification</h2>
+                <form id="leadForm">
+                    <div class="form-group">
+                        <label for="leadUserId">User ID:</label>
+                        <input type="text" id="leadUserId" name="userId" placeholder="Enter user ID" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="clientName">Client Name:</label>
+                        <input type="text" id="clientName" name="clientName" placeholder="Client name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="yachtName">Yacht Name:</label>
+                        <input type="text" id="yachtName" name="yachtName" placeholder="Yacht name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="priority">Priority:</label>
+                        <select id="priority" name="priority">
+                            <option value="low">Low (🟢)</option>
+                            <option value="medium">Medium (🟡)</option>
+                            <option value="high">High (🔴)</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">Send Lead Notification</button>
+                </form>
+            </div>
+            
+            <!-- Statistics Tab -->
+            <div id="stats" class="tab-content">
+                <h2>Subscription Statistics</h2>
+                <div class="stats">
+                    <button class="btn" onclick="loadStats()">Refresh Stats</button>
+                    <div id="statsContent"></div>
+                </div>
+            </div>
+            
+            <div id="response" class="response"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function showResponse(message, isError = false) {
+            const response = document.getElementById('response');
+            response.textContent = message;
+            response.className = `response ${isError ? 'error' : 'success'}`;
+            response.style.display = 'block';
+            
+            setTimeout(() => {
+                response.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Send notification form
+        document.getElementById('sendForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/send-notification`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse(`✅ ${result.message}`);
+                } else {
+                    showResponse(`❌ ${result.error}`, true);
+                }
+            } catch (error) {
+                showResponse(`❌ Error: ${error.message}`, true);
+            }
+        });
+        
+        // Broadcast form
+        document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/broadcast-notification`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse(`✅ ${result.message} (${result.successCount} sent, ${result.failureCount} failed)`);
+                } else {
+                    showResponse(`❌ ${result.error}`, true);
+                }
+            } catch (error) {
+                showResponse(`❌ Error: ${error.message}`, true);
+            }
+        });
+        
+        // Lead notification form
+        document.getElementById('leadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}/notify-new-lead`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse(`✅ ${result.message}`);
+                } else {
+                    showResponse(`❌ ${result.error}`, true);
+                }
+            } catch (error) {
+                showResponse(`❌ Error: ${error.message}`, true);
+            }
+        });
+        
+        // Test notification
+        async function testNotification() {
+            const userId = document.getElementById('userId').value;
+            
+            if (!userId) {
+                showResponse('❌ Please enter a User ID first', true);
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/test-notification`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse(`✅ ${result.message}`);
+                } else {
+                    showResponse(`❌ ${result.error}`, true);
+                }
+            } catch (error) {
+                showResponse(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                
+                const statsContent = document.getElementById('statsContent');
+                statsContent.innerHTML = `
+                    <div class="stat-item">
+                        <span><strong>Total Subscriptions:</strong></span>
+                        <span>${stats.totalSubscriptions}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span><strong>Subscribed Users:</strong></span>
+                        <span>${stats.subscriptions.join(', ') || 'None'}</span>
+                    </div>
+                `;
+            } catch (error) {
+                showResponse(`❌ Error loading stats: ${error.message}`, true);
+            }
+        }
+        
+        // Load stats on page load
+        loadStats();
+    </script>
+</body>
+</html>
