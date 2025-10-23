@@ -455,3 +455,8 @@ app.listen(PORT, () => {
   console.log(`   POST /test-notification         - Send test notification`);
   console.log(`   GET  /stats                     - Get subscription statistics\n`);
 });
+
+// Catch-all route to serve PWA
+app.get('/*', (req, res) => {
+  res.sendFile(path.join(webDir, 'index.html'));
+});
