@@ -1,7 +1,7 @@
 // Service Worker for YachtSummary PWA
 // Handles push notifications and offline functionality
 
-const CACHE_NAME = 'yacht-summary-v1'
+const CACHE_NAME = 'yacht-summary-v2'
 const urlsToCache = [
   '/',
   '/index.html',
@@ -18,6 +18,20 @@ self.addEventListener('install', (event) => {
         console.log('Opened cache')
         return cache.addAll(urlsToCache)
       })
+  )
+  self.skipWaiting()
+})
+
+// Activate event - clean up old caches and take control immediately
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      )
+    }).then(() => self.clients.claim())
   )
 })
 
