@@ -456,7 +456,21 @@ app.listen(PORT, () => {
   console.log(`   GET  /stats                     - Get subscription statistics\n`);
 });
 
-// Catch-all route to serve PWA
-app.get('/*', (req, res) => {
+// Serve PWA for all non-API routes
+app.use((req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/health') || 
+      req.path.startsWith('/vapid') || 
+      req.path.startsWith('/subscribe') || 
+      req.path.startsWith('/unsubscribe') || 
+      req.path.startsWith('/notify') || 
+      req.path.startsWith('/send-notification') || 
+      req.path.startsWith('/broadcast-notification') || 
+      req.path.startsWith('/notify-new-lead') || 
+      req.path.startsWith('/test-notification') || 
+      req.path.startsWith('/stats') ||
+      req.path.startsWith('/dashboard')) {
+    return next();
+  }
   res.sendFile(path.join(webDir, 'index.html'));
 });
