@@ -140,3 +140,4 @@ curl -X POST https://yachtsummary-backend.onrender.com/notify \
 4. **Monitor usage** - Track subscription stats
 
 **Ready to send notifications to yacht users worldwide! 🌍🚢**
+

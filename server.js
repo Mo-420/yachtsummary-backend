@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const webpush = require('web-push');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -12,11 +14,48 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from public directory
-app.use(express.static('public'));
+// Serve static files for dashboard and PWA
+const publicDir = path.join(__dirname, 'public');
+const webDir = path.join(__dirname, 'web');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+}
+if (fs.existsSync(webDir)) {
+  app.use(express.static(webDir));
+}
 
-// Store subscriptions in memory (in production, use a database)
-const subscriptions = new Map();
+// Persistent subscriptions storage
+const dataDir = path.join(__dirname, 'data');
+const subscriptionFile = path.join(dataDir, 'subscriptions.json');
+
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const loadSubscriptions = () => {
+  try {
+    if (fs.existsSync(subscriptionFile)) {
+      const content = fs.readFileSync(subscriptionFile, 'utf-8');
+      const parsed = JSON.parse(content || '{}');
+      return new Map(Object.entries(parsed));
+    }
+  } catch (error) {
+    console.error('✗ Failed to load subscriptions from disk:', error);
+  }
+  return new Map();
+};
+
+const saveSubscriptions = (subscriptions) => {
+  try {
+    const json = JSON.stringify(Object.fromEntries(subscriptions.entries()), null, 2);
+    fs.writeFileSync(subscriptionFile, json, 'utf-8');
+  } catch (error) {
+    console.error('✗ Failed to save subscriptions to disk:', error);
+  }
+};
+
+// Load existing subscriptions
+const subscriptions = loadSubscriptions();
 
 // Web Push Configuration
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY || 'BEo_8J7F9v3d6t9K8m2P4q5L7n8R9sT0v1W2x3Y4z5A6b7C8d9E0f1G2h3I4j5K6l7M8';
@@ -43,17 +82,23 @@ app.get('/vapid-public-key', (req, res) => {
 
 // Subscribe to push notifications
 app.post('/subscribe', (req, res) => {
-  const { subscription, userId } = req.body;
+  const { subscription, userId, platform, userAgent } = req.body;
 
   if (!subscription) {
     return res.status(400).json({ error: 'Subscription is required' });
   }
 
-  // Store subscription with userId
-  subscriptions.set(userId || 'anonymous', subscription);
-  console.log(`✓ Subscription saved for user: ${userId || 'anonymous'}`);
+  const normalizedUserId = userId || `anonymous_${Date.now()}`;
+  subscriptions.set(normalizedUserId, {
+    subscription,
+    platform,
+    userAgent,
+    subscribedAt: new Date().toISOString(),
+  });
+  saveSubscriptions(subscriptions);
+  console.log(`✓ Subscription saved for user: ${normalizedUserId}`);
 
-  res.json({ success: true, message: 'Subscribed to push notifications' });
+  res.json({ success: true, message: 'Subscribed to push notifications', userId: normalizedUserId });
 });
 
 // Unsubscribe from push notifications
@@ -63,6 +108,7 @@ app.post('/unsubscribe', (req, res) => {
   if (subscriptions.has(userId)) {
     subscriptions.delete(userId);
     console.log(`✓ Unsubscribed user: ${userId}`);
+    saveSubscriptions(subscriptions);
   }
 
   res.json({ success: true, message: 'Unsubscribed from push notifications' });
@@ -76,7 +122,8 @@ app.post('/send-notification', async (req, res) => {
     return res.status(400).json({ error: 'userId, title, and body are required' });
   }
 
-  const subscription = subscriptions.get(userId);
+  const storedSubscription = subscriptions.get(userId);
+  const subscription = storedSubscription?.subscription || storedSubscription;
 
   if (!subscription) {
     return res.status(404).json({ error: `No subscription found for user: ${userId}` });
@@ -131,7 +178,8 @@ app.post('/broadcast-notification', async (req, res) => {
   let successCount = 0;
   let failureCount = 0;
 
-  for (const [userId, subscription] of subscriptions.entries()) {
+  for (const [userId, stored] of subscriptions.entries()) {
+    const subscription = stored?.subscription || stored;
     try {
       await webpush.sendNotification(subscription, payload);
       successCount++;
@@ -142,7 +190,8 @@ app.post('/broadcast-notification', async (req, res) => {
       
       // Remove invalid subscription
       if (error.statusCode === 410) {
-        subscriptions.delete(userId);
+    subscriptions.delete(userId);
+        saveSubscriptions(subscriptions);
       }
     }
   }
@@ -159,7 +208,12 @@ app.post('/broadcast-notification', async (req, res) => {
 app.get('/stats', (req, res) => {
   res.json({
     totalSubscriptions: subscriptions.size,
-    subscriptions: Array.from(subscriptions.keys())
+    subscriptions: Array.from(subscriptions.entries()).map(([userId, stored]) => ({
+      userId,
+      platform: stored.platform || 'unknown',
+      userAgent: stored.userAgent || 'unknown',
+      subscribedAt: stored.subscribedAt || null
+    }))
   });
 });
 
@@ -258,7 +312,8 @@ app.post('/notify', async (req, res) => {
 
   if (broadcast) {
     // Send to all users
-    for (const [targetUserId, subscription] of subscriptions.entries()) {
+    for (const [targetUserId, stored] of subscriptions.entries()) {
+      const subscription = stored?.subscription || stored;
       try {
         await webpush.sendNotification(subscription, payload);
         successCount++;
@@ -272,6 +327,7 @@ app.post('/notify', async (req, res) => {
         // Remove invalid subscription
         if (error.statusCode === 410) {
           subscriptions.delete(targetUserId);
+        saveSubscriptions(subscriptions);
         }
       }
     }
@@ -287,7 +343,8 @@ app.post('/notify', async (req, res) => {
 
   } else {
     // Send to specific user
-    const subscription = subscriptions.get(userId);
+    const stored = subscriptions.get(userId);
+    const subscription = stored?.subscription || stored;
 
     if (!subscription) {
       return res.status(404).json({ error: `No subscription found for user: ${userId}` });
@@ -308,6 +365,7 @@ app.post('/notify', async (req, res) => {
       // Remove invalid subscription
       if (error.statusCode === 410) {
         subscriptions.delete(userId);
+        saveSubscriptions(subscriptions);
       }
       
       res.status(500).json({ error: 'Failed to send notification', details: error.message });
@@ -355,6 +413,7 @@ app.post('/notify-new-lead', async (req, res) => {
     
     if (error.statusCode === 410) {
       subscriptions.delete(userId);
+      saveSubscriptions(subscriptions);
     }
     
     res.status(500).json({ error: 'Failed to send lead notification', details: error.message });
@@ -365,6 +424,17 @@ app.post('/notify-new-lead', async (req, res) => {
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ error: 'Internal server error', message: err.message });
+});
+
+// Fallback route to serve PWA for unknown paths (after API routes)
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const indexPath = path.join(webDir, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('PWA build not found.');
+  }
 });
 
 app.listen(PORT, () => {
