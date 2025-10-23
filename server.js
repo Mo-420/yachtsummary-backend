@@ -456,7 +456,7 @@ app.listen(PORT, () => {
   console.log(`   GET  /stats                     - Get subscription statistics\n`);
 });
 
-// Serve PWA for all non-API routes
+// Serve PWA for all non-API routes (must be last)
 app.use((req, res, next) => {
   // Skip API routes and static assets
   if (req.path.startsWith('/health') || 
@@ -486,3 +486,4 @@ app.use((req, res, next) => {
   }
   res.sendFile(path.join(webDir, 'index.html'));
 });
+
