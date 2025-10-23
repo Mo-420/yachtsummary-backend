@@ -17,11 +17,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files for dashboard and PWA
 const publicDir = path.join(__dirname, 'public');
 const webDir = path.join(__dirname, 'web');
-if (fs.existsSync(publicDir)) {
-  app.use(express.static(publicDir));
-}
+
+// Serve PWA first (higher priority)
 if (fs.existsSync(webDir)) {
   app.use(express.static(webDir));
+}
+
+// Serve dashboard on /dashboard route
+if (fs.existsSync(publicDir)) {
+  app.use('/dashboard', express.static(publicDir));
 }
 
 // Persistent subscriptions storage
