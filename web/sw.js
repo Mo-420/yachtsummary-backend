@@ -1,7 +1,7 @@
 // Service Worker for YachtSummary PWA
 // Handles push notifications and offline functionality
 
-const CACHE_NAME = 'yacht-summary-v2'
+const CACHE_NAME = 'yacht-summary-v3'
 const urlsToCache = [
   '/',
   '/index.html',
