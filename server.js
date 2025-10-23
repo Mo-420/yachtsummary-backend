@@ -458,7 +458,7 @@ app.listen(PORT, () => {
 
 // Serve PWA for all non-API routes
 app.use((req, res, next) => {
-  // Skip API routes
+  // Skip API routes and static assets
   if (req.path.startsWith('/health') || 
       req.path.startsWith('/vapid') || 
       req.path.startsWith('/subscribe') || 
@@ -469,7 +469,19 @@ app.use((req, res, next) => {
       req.path.startsWith('/notify-new-lead') || 
       req.path.startsWith('/test-notification') || 
       req.path.startsWith('/stats') ||
-      req.path.startsWith('/dashboard')) {
+      req.path.startsWith('/dashboard') ||
+      req.path.startsWith('/assets') ||
+      req.path.startsWith('/icons') ||
+      req.path.startsWith('/favicon') ||
+      req.path.startsWith('/manifest') ||
+      req.path.startsWith('/sw.js') ||
+      req.path.startsWith('/browserconfig') ||
+      req.path.endsWith('.js') ||
+      req.path.endsWith('.css') ||
+      req.path.endsWith('.png') ||
+      req.path.endsWith('.ico') ||
+      req.path.endsWith('.svg') ||
+      req.path.endsWith('.webmanifest')) {
     return next();
   }
   res.sendFile(path.join(webDir, 'index.html'));
